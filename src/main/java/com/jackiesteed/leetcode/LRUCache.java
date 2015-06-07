@@ -2,72 +2,62 @@ package com.jackiesteed.leetcode;
 
 import java.util.*;
 
-/**
+/** An simple implementation of LRUCache
  * Created by jackie on 4/23/15.
  */
 public class LRUCache {
-
+    /**
+     * the capacity of the cache storage
+     */
     private int capacity;
 
-    private Map<Integer, Ele> map = new HashMap<Integer, Ele>();
+    /**
+     * map for fast retrieve
+     */
+    private Map<Integer, Node> map = new HashMap<Integer, Node>();
 
-    private Ele head = null;
+    /**
+     * head of the cache list
+     */
+    private Node head = null;
 
-    private Ele tail = null;
-
+    /**
+     * tail of the cache list
+     */
+    private Node tail = null;
 
     public LRUCache(int capacity) {
         this.capacity = capacity;
     }
 
-
+    /**
+     * set a cache item
+     * @param key
+     * @param value
+     */
     public void set(int key, int value) {
+        //If the key is set in the cache
         if(map.containsKey(key)){
-            Ele e = map.get(key);
-            if(head != e){
-                unlink(e);
-                add2Head(e);
-            }
-            e.value = value;
+            refreshUsage(key, value);
             return;
         }
+        //remove the least recently used item if storage is full
         if(map.size() >= capacity){
-            Ele e = tail;
-            map.remove(e.key);
-            e.value = value;
-            e.key = key;
-            map.put(key, e);
-            unlink(e);
-            add2Head(e);
+            eraseAndSet(key, value);
             return;
         }
-        Ele e = new Ele();
-        e.key = key;
-        e.value = value;
-        e.pre = null;
-        e.next = null;
-
-        if(head == null || tail == null){
-            head = e;
-            tail = e;
-        }else{
-            add2Head(e);
-        }
-
-
-        map.put(key, e);
+        // none of the two above state, insert a new one
+        insertNode(key, value);
     }
 
-    private void add2Head(Ele e){
-        e.pre = null;
-        e.next = head;
-        head.pre = e;
-        head = e;
-    }
-
+    /**
+     * get a cached item
+     * @param key
+     * @return
+     */
     public int get(int key) {
         if (map.containsKey(key)) {
-            Ele e = map.get(key);
+            Node e = map.get(key);
             if(head != e){
                 unlink(e);
                 add2Head(e);
@@ -77,41 +67,119 @@ public class LRUCache {
         return -1;
     }
 
-    private void unlink(Ele e){
+    /**
+     * when the cache storage is full, erase the least recently used, and set the new one
+     * @param key
+     * @param value
+     * @return
+     */
+    private void eraseAndSet(int key, int value){
+        Node e = tail;
+        map.remove(e.key);
+        e.value = value;
+        e.key = key;
+        map.put(key, e);
+        unlink(e);
+        add2Head(e);
+    }
 
-        if(e.pre != null)
-            e.pre.next = e.next;
-        if(e.next != null)
-            e.next.pre = e.pre;
+    /**
+     * If the key exists in the cache, refresh the value and move to head
+     * @param key
+     * @param value
+     * @return
+     */
+    private void refreshUsage(int key, int value){
+        Node e = map.get(key);
+        if(head != e){
+            unlink(e);
+            add2Head(e);
+        }
+        e.value = value;
+    }
 
-        if(tail == e)
-            tail = e.pre;
+    /**
+     * when the cache is not full, insert one node
+     * @param key
+     * @param value
+     */
+    private void insertNode(int key, int value){
+        Node e = new Node(key, value);
+        if(head == null || tail == null){
+            head = e;
+            tail = e;
+        }else{
+            add2Head(e);
+        }
+        map.put(key, e);
+    }
 
+    /**
+     * add node to head
+     * @param e
+     */
+    private void add2Head(Node e){
+        e.pre = null;
+        e.next = head;
+        head.pre = e;
+        head = e;
+    }
+
+    /**
+     * delete the node from the list
+     * @param node
+     */
+    private void unlink(Node node){
+        if(node.pre != null)
+            node.pre.next = node.next;
+        if(node.next != null)
+            node.next.pre = node.pre;
+        if(tail == node)
+            tail = node.pre;
         if(tail == null)
             tail = head;
     }
 
-    static class Ele {
+    /**
+     * Node , represents a cache item
+     */
+    private static class Node {
         private int value;
         private int key;
-        private Ele next;
-        private Ele pre;
+        private Node next;
+        private Node pre;
+
+        /**
+         * fully constructor
+         * @param value
+         * @param key
+         * @param next
+         * @param pre
+         */
+        public Node(int value, int key, Node next, Node pre){
+            this.value = value;
+            this.key = key;
+            this.next = next;
+            this.pre = pre;
+        }
+
+        public Node(int value, int key){
+            this(value, key, null, null);
+        }
     }
 
     public void print(){
-        Ele e = head;
+        Node e = head;
         while(true){
             if(e == null)
                 break;
             System.out.print("(" + e.key + "," + e.value + "),");
             e = e.next;
         }
-
         System.out.println("");
     }
 
     public static void main(String[] args) {
-
         LRUCache cache = new LRUCache(3);
         cache.set(1,1);
         cache.set(2, 2);
@@ -123,7 +191,5 @@ public class LRUCache {
         cache.get(2);
         cache.get(1);
         cache.print();
-
-
     }
 }
